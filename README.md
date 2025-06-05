@@ -1,43 +1,40 @@
-# HackMeOs
+# TradeKernel
+Bare-Metal Real-Time OS for Ultra-Low-Latency Trading
 
 ## Overview
+TradeKernel is a deterministic operating system engineered for high-frequency trading (HFT), written in C++ and Assembly. It eliminates traditional OS jitter through a custom scheduler, kernel-bypass networking, and pre-allocated memory to achieve sub-microsecond latency.
 
-This project aims to explore and experiment with the LC-3 architecture by creating and executing a virtual C OS that can be emulate the LC-3 architecture. 
+## Key Features
+* Tickless Scheduler: CPU isolation and priority-based task dispatch (<500ns context switches).
+* Zero-Copy Networking: Direct NIC access via DPDK/SPDK (UDP multicast optimized).
+* Deterministic Memory: Physical memory pools with mlock()-style guarantees.
+* Hardware Profiling: Cycle-accurate metrics using RDTSCP and PMU counters.
+  
+## Build & Deploy
+### Requirements
+* Hardware: x86_64 with Intel/AMD CPUs (NUMA-aware) or ARMv8+.
+* Toolchain: GCC/Clang with -O3 -march=native.
+* Copy
+* git clone https://github.com/yourusername/TradeKernel.git  
+* cd TradeKernel  
+* make && make run  # QEMU-KVM or bare-metal  
 
-## Objectives
-
-1. **Understand the LC-3 Architecture**: Gain a deep understanding of the LC-3 architecture and how it executes instructions.
-2. **Develop C Programs**: Write and test C programs that can be loaded and executed on the LC-3 simulator.
-3. **Create Nanochess Games**: Develop simple chess games that can run within the constraints of the LC-3 architecture.
-4. **Experiment with Other Scripts**: Explore other potential scripts and applications that can be executed on the LC-3 simulator.
-
-## Project Structure
--  The main file is the main.c 
-- `lc3tools/`: Contains all the assembly code compiled to obj and in .asm format
-- `docs/`: Documentation and resources related to LC-3 architecture.
-
-## Prerequisites
-
-- **Compiler**: GCC or any other C compiler that supports the LC-3 architecture.
-
-1. **Set Up Environment**:
-    - Install GCC: `sudo apt-get install gcc`
-
-2. **Compile the Code**:
-    - Compile the main C code: `gcc -o main main.c`
-
-3. **Test the Code**:
-    - : `./main lc3tools/simple.obj`
-
-## Resources
-
-- [LC-3 Documentation](docs/lc3.md)
-- [LC-3 Instruction Set](docs/lc3_instruction_set.md)
-- [C Programming Tutorials](docs/c_programming_tutorials.md)
+## Performance
+* Metric	Target
+* Interrupt Latency	< 100ns
+* NIC-to-UserSpace	< 300ns
+* Memory Access	40ns (L1 cache)
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+* Drivers: NVMe, FPGA co-processors.
+* Benchmarks: Against Xenomai/seL4.
+* Guidelines: CONTRIBUTING.md.
+
+## Resources
+- [LC-3 Documentation](docs/lc3.md)
+- [LC-3 Instruction Set](docs/lc3_instruction_set.md)
+- [C Programming Tutorials](docs/c_programming_tutorials.md)
 
 ## License
 
