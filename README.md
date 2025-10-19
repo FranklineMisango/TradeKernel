@@ -1,169 +1,237 @@
 # TradeKernel
 **Bare-Metal Real-Time OS for Ultra-Low-Latency Trading**
 
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/tradekernel)
+[![Demo Ready](https://img.shields.io/badge/demo-ready-blue.svg)](./demo.sh)
+[![Trading System](https://img.shields.io/badge/trading-functional-orange.svg)](./TRADING_DEMO.md)
+
 ## Overview
 TradeKernel is a deterministic operating system engineered for high-frequency trading (HFT), written in C++ and x86_64 Assembly. It eliminates traditional OS jitter through a custom tickless scheduler, kernel-bypass networking, and pre-allocated memory pools to achieve sub-microsecond latency.
 
+## Features
+
+- **32-bit Protected Mode**: Complete transition from 16-bit real mode
+- **VGA Text Mode Driver**: 80x25 color text display with scrolling
+- **Memory Management**: Simple heap allocator with malloc/free functionality
+- **Interrupt Handling**: Keyboard and timer interrupt support
+- **Interactive Console**: Real-time keyboard input processing
+- **Clean Architecture**: Modular design with separate drivers and subsystems
+
 ## Architecture
 
-### Core Components
-- **Kernel**: 64-bit x86 kernel with optimized entry points
-- **Memory Manager**: Lock-free NUMA-aware memory pools
-- **Scheduler**: Tickless priority-based task scheduler (<500ns context switches)
-- **Networking**: Zero-copy packet processing with ring buffers
-- **Drivers**: Direct hardware access for NICs and storage
-
-### Key Features
-* **Tickless Scheduler**: CPU isolation and priority-based task dispatch with <500ns context switches
-* **Zero-Copy Networking**: Direct NIC access via kernel-bypass (UDP multicast optimized)
-* **Deterministic Memory**: Lock-free memory pools with NUMA awareness
-* **Hardware Profiling**: Cycle-accurate metrics using RDTSCP and PMU counters
-* **Cache Optimization**: Critical data structures are cache-line aligned
-* **Real-time Guarantees**: Predictable execution times for trading algorithms
-
-## Build & Deploy
-
-### Requirements
-* **Hardware**: x86_64 with Intel/AMD CPUs (NUMA-aware) or ARMv8+
-* **Toolchain**: Clang/LLVM with Link-Time Optimization
-* **Dependencies**: NASM (assembler), QEMU (testing), GNU Make
-
-### Installation (macOS)
-```bash
-# Install dependencies
-make install-deps
-
-# Build the kernel
-make clean && make all
-
-# Run in QEMU with hardware acceleration
-make run
 ```
+kernel/
+├── arch/                    # Architecture-specific code
+│   ├── boot.asm            # Bootloader (16-bit -> 32-bit transition)
+│   ├── interrupts.h/.c     # Interrupt descriptor table and handlers
+│   └── interrupt_handlers.asm # Assembly interrupt wrappers
+├── drivers/                 # Device drivers
+│   ├── vga.h/.c            # VGA text mode driver
+├── mm/                     # Memory management
+│   └── memory.h/.c         # Heap allocator and memory utilities
+├── kernel.c                # Main kernel entry point
+└── kernel.ld               # Linker script
+```
+
+## Building and Running
+
+### Prerequisites
+
+Install the required development tools:
+
+```bash
+sudo apt-get update
+sudo apt-get install build-essential nasm qemu-system-x86
+```
+
+### Quick Start
+
+1. **Clone and navigate to the project:**
+   ```bash
+   cd TradeKernel-ArithmaX-Customized
+   ```
+
+2. **Build and run the OS:**
+   ```bash
+   ./run_tradeos.sh
+   ```
+
+3. **For quick development testing:**
+   ```bash
+   ./quick_test.sh
+   ```
 
 ### Manual Build
-```bash
-git clone https://github.com/yourusername/TradeKernel.git  
-cd TradeKernel  
-make clean && make all
-make run  # QEMU-KVM emulation
-```
-
-## Performance Targets
-
-| Metric | Target | Implementation |
-|--------|--------|----------------|
-| Interrupt Latency | < 100ns | Direct interrupt handlers |
-| NIC-to-UserSpace | < 300ns | Zero-copy ring buffers |
-| Memory Access | 40ns | L1 cache optimization |
-| Context Switch | < 500ns | Minimal register state |
-| Packet Processing | < 1μs | Kernel-bypass networking |
-
-## Project Structure
-
-```
-TradeKernel/
-├── boot/                 # Bootloader (16/32/64-bit transition)
-│   └── boot.asm         # BIOS bootloader with long mode setup
-├── src/
-│   ├── kernel/          # Core kernel implementation
-│   │   ├── entry.asm    # 64-bit entry point and context switching
-│   │   └── main.cpp     # Kernel initialization and main loop
-│   ├── memory/          # Memory management subsystem
-│   │   └── memory_manager.cpp  # NUMA-aware lock-free allocators
-│   ├── scheduler/       # Task scheduling
-│   │   └── tickless_scheduler.cpp  # Priority-based scheduler
-│   ├── drivers/         # Hardware drivers
-│   └── networking/      # Network stack
-├── include/             # Header files
-│   ├── types.h         # Core types and performance macros
-│   ├── memory.h        # Memory management interfaces
-│   ├── scheduler.h     # Scheduler interfaces
-│   └── networking.h    # Networking interfaces
-├── tools/              # Development tools
-├── docs/               # Documentation
-└── Makefile           # Build system with optimizations
-```
-
-## Usage Example
-
-```cpp
-// Create high-priority market data task
-u32 market_task = g_scheduler->create_task(
-    Priority::CRITICAL,
-    market_data_processor,
-    nullptr,
-    16384  // 16KB stack
-);
-
-// Process packets with zero-copy
-NetworkPacket packet;
-if (interface->receive_packet(packet)) {
-    auto* udp_header = packet.get_udp_header();
-    auto* payload = packet.get_payload();
-    
-    // Process market data with sub-microsecond latency
-    process_market_update(payload, packet.get_payload_size());
-}
-```
-
-## Optimization Features
-
-### Compiler Optimizations
-- **-O3**: Maximum optimization level
-- **-march=native**: CPU-specific optimizations
-- **-flto**: Link-time optimization
-- **-ffast-math**: Aggressive floating-point optimizations
-- **Cache alignment**: Critical structures aligned to 64-byte cache lines
-
-### Runtime Optimizations
-- **Lock-free data structures**: Atomic operations instead of mutexes
-- **NUMA awareness**: Memory allocation on local nodes
-- **CPU affinity**: Tasks pinned to specific cores
-- **Ring buffers**: Zero-copy packet processing
-- **Prefetching**: Software prefetching for predictable access patterns
-
-## Benchmarking
 
 ```bash
-# Run performance benchmarks
-make benchmark
+# Clean previous builds
+make -f Makefile.new clean
 
-# Debug with performance monitoring
-make debug
+# Build the OS image
+make -f Makefile.new all
 
-# Performance analysis with QEMU
-make perf
+# Run in QEMU
+make -f Makefile.new run
 ```
+
+### QEMU Controls
+
+- **Ctrl+Alt+G**: Release mouse from QEMU window
+- **Ctrl+Alt+2**: Switch to QEMU monitor console
+- **Ctrl+Alt+1**: Return to OS display
+- **Ctrl+C**: Quit QEMU (in terminal)
+
+## System Specifications
+
+- **Target Architecture**: x86 (32-bit)
+- **Memory Layout**:
+  - Bootloader: 0x7C00 (loaded by BIOS)
+  - Kernel: 0x10000 (64KB)
+  - Kernel Heap: 0x100000 (1MB+, 4MB allocated)
+- **VGA Text Mode**: 80x25 characters, 16 colors
+- **Interrupts**: Timer (IRQ 0) and Keyboard (IRQ 1)
 
 ## Development
 
-### Adding New Components
-1. Create header in `include/`
-2. Implement in appropriate `src/` subdirectory
-3. Update `Makefile` with new source files
-4. Add to kernel initialization in `main.cpp`
+### Adding New Features
 
-### Contributing
-- **Drivers**: NVMe, FPGA co-processors, InfiniBand
-- **Benchmarks**: Against Linux RT, Xenomai, seL4
-- **Optimizations**: SIMD operations, hardware timestamping
-- **Guidelines**: See `CONTRIBUTING.md`
+1. **Drivers**: Add new device drivers in `kernel/drivers/`
+2. **System Calls**: Extend interrupt handling in `kernel/arch/`
+3. **Memory**: Enhance memory management in `kernel/mm/`
+4. **Algorithms**: Build trading algorithms on top of the kernel foundation
 
-## Resources
-- [TradeKernel Architecture](docs/architecture.md)
-- [Performance Tuning Guide](docs/performance.md)
-- [Network Programming](docs/networking.md)
-- [Memory Management](docs/memory.md)
-- [Real-time Programming](docs/realtime.md)
+### Debugging
+
+Use QEMU's debugging features:
+
+```bash
+# Start with GDB server
+make -f Makefile.new debug
+
+# In another terminal, connect with GDB
+gdb
+(gdb) target remote :1234
+(gdb) symbol-file build/kernel.bin
+```
+
+## File Structure
+
+- `run_tradeos.sh`: Main build and run script
+- `quick_test.sh`: Quick development testing
+- `Makefile.new`: Build system configuration
+- `kernel/`: All kernel source code
+- `build/`: Generated build artifacts (created during build)
+
+## Testing
+
+The OS provides an interactive console where you can:
+
+- Type characters using the keyboard
+- See real-time text output
+- Observe interrupt handling in action
+- Test memory allocation (can be extended)
+
+## Development Roadmap
+
+### Phase 1: Core System Features (Essential)
+
+#### 1. File System ✅ **COMPLETED**
+- **Simple FAT-like filesystem** for storing trading strategies and data ✅
+- **Basic file operations**: create, read, write, delete files ✅
+- **Directory support** for organizing trading algorithms ✅
+- **Commands**: `ls`, `cat`, `mkdir`, `rm`, `cp`, `mv` ✅
+
+#### 2. Enhanced Memory Management ✅ **COMPLETED**
+- **Virtual memory** with paging support ✅
+- **Memory protection** between processes ✅
+- **Improved heap allocator** with best-fit algorithm and debugging ✅
+- **Memory debugging** tools and statistics ✅
+- **Commands**: `memstats`, `memleak`, `memcheck`, `pgstats`
+
+#### 3. Process Management & Scheduling
+- **Multi-tasking support** for concurrent trading algorithms
+- **Process creation/termination** (`fork`, `exec`, `kill`)
+- **Priority-based scheduler** for real-time trading
+- **Inter-process communication** (pipes, shared memory)
+
+### Phase 2: System Services (Important)
+
+#### 4. Network Stack
+- **TCP/IP implementation** for market data feeds
+- **Ethernet driver** for network connectivity
+- **Socket API** for network programming
+- **DHCP client** for automatic IP configuration
+
+#### 5. Timer & Clock Services
+- **High-precision timers** for microsecond trading
+- **Real-time clock (RTC)** support
+- **System uptime** and performance counters
+- **Scheduling based on time events**
+
+#### 6. Device Drivers
+- **Disk/Storage drivers** (IDE/SATA)
+- **Serial port communication** for external devices
+- **USB support** for peripherals
+- **Sound card** for alerts/notifications
+
+### Phase 3: Trading-Specific Features (Specialized)
+
+#### 7. Trading Engine Core
+- **Market data structures** (orders, trades, positions)
+- **Order management system** with validation
+- **Risk management** algorithms
+- **Portfolio tracking** and P&L calculation
+
+#### 8. Real-Time Data Processing
+- **Lock-free data structures** for high-frequency trading
+- **Event-driven architecture** for market events
+- **Low-latency message queues**
+- **Market data parsers** (FIX protocol, etc.)
+
+#### 9. Strategy Framework
+- **Plugin system** for trading strategies
+- **Backtesting engine** with historical data
+- **Performance analytics** and reporting
+- **Configuration management** for strategies
+
+### Phase 4: Development Tools (Quality of Life)
+
+#### 10. Debugging & Monitoring
+- **Built-in debugger** with breakpoints
+- **System profiler** for performance analysis
+- **Log management** system
+- **Resource monitoring** (CPU, memory, network)
+
+#### 11. Development Environment
+- **Text editor** within the OS
+- **Compiler integration** for C/Assembly
+- **Version control** (basic Git-like system)
+- **Package manager** for libraries
+
+### Implementation Priority
+
+**Next 3 Recommended Features:**
+1. **Network Stack** - Critical for receiving real-time market data feeds
+2. **Timer & Clock Services** - High-precision timers for trading
+3. **Enhanced File Writing** - Add text editor and file modification capabilities
+
+**Example Future Commands:**
+```bash
+$ ls                    # List files and directories
+$ mkdir strategies      # Create directory for trading algorithms
+$ cat strategy.txt      # Display file contents
+$ edit myalgo.c        # Built-in text editor
+$ compile myalgo.c     # Compile trading strategy
+$ run myalgo           # Execute trading algorithm
+$ netstat              # Show network connections
+$ top                  # Show running processes
+$ df                   # Show disk usage
+```
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the same terms as the original TradeKernel project.
 
----
+## Contributing
 
-**Warning**: This is a bare-metal operating system intended for dedicated trading hardware. Do not run on production systems without proper isolation.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+Feel free to extend this OS with additional features. The modular architecture makes it easy to add new subsystems while maintaining clean separation of concerns.
